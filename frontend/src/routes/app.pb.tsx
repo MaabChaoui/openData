@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { DomainWorkspace } from "@/components/backend/DomainWorkspace";
 
 export const Route = createFileRoute("/app/pb")({
-  head: () => ({ meta: [{ title: "PB — Backend connecté" }] }),
+  head: () => ({ meta: [{ title: "PB — L'Algérienne Vie" }] }),
   component: PbPage,
 });
 
@@ -11,8 +11,10 @@ function PbPage() {
     <DomainWorkspace
       domain="pb"
       title="Participation aux Bénéfices"
-      subtitle="PB · documents, runs et résultats backend"
-      description="Le frontend exploite ici le flux backend existant: documents versionnés, exécution PB et restitution des artefacts."
+      subtitle="Quote-part des résultats techniques attribuée aux assurés"
+      description="Provision PB — part des bénéfices techniques et financiers contractuellement reversée aux assurés."
+      primaryMetricLabel="PB estimée"
+      primaryCTALabel="Calculer la PB"
       fields={[
         {
           key: "default_loss_ratio_threshold",

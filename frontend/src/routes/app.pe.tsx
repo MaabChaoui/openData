@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { DomainWorkspace } from "@/components/backend/DomainWorkspace";
 
 export const Route = createFileRoute("/app/pe")({
-  head: () => ({ meta: [{ title: "PE — Backend connecté" }] }),
+  head: () => ({ meta: [{ title: "PE — L'Algérienne Vie" }] }),
   component: PePage,
 });
 
@@ -11,8 +11,10 @@ function PePage() {
     <DomainWorkspace
       domain="pe"
       title="Provision d'Égalisation"
-      subtitle="PE · documents, runs et résultats backend"
-      description="Cette vue s'appuie directement sur les endpoints PE disponibles pour les uploads, runs et artefacts."
+      subtitle="Lissage des résultats techniques sur plusieurs exercices"
+      description="Provision destinée à faire face aux fluctuations de sinistralité — constituée en période favorable."
+      primaryMetricLabel="PE estimée"
+      primaryCTALabel="Calculer la PE"
       fields={[
         {
           key: "positive_result_coefficient",

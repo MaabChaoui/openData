@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { DomainWorkspace } from "@/components/backend/DomainWorkspace";
 
 export const Route = createFileRoute("/app/sap")({
-  head: () => ({ meta: [{ title: "SAP — Backend connecté" }] }),
+  head: () => ({ meta: [{ title: "SAP — L'Algérienne Vie" }] }),
   component: SapPage,
 });
 
@@ -11,8 +11,10 @@ function SapPage() {
     <DomainWorkspace
       domain="sap"
       title="Sinistres À Payer"
-      subtitle="SAP · documents, runs et résultats backend"
-      description="Le backend fournit désormais le stockage des classeurs SAP, les runs de calcul et leurs téléchargements."
+      subtitle="Évaluation des sinistres déclarés en cours de règlement"
+      description="Provision SAP — couvre les sinistres déclarés mais non encore intégralement liquidés à la clôture."
+      primaryMetricLabel="SAP estimée"
+      primaryCTALabel="Calculer la SAP"
       fields={[
         {
           key: "closing_date",
