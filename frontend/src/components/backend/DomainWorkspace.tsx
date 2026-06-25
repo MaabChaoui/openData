@@ -273,29 +273,21 @@ export function DomainWorkspace({
   const ctaLabel = primaryCTALabel ?? `Calculer — ${domain.toUpperCase()}`;
   const runVariant = latestRun ? runStatusVariant(latestRun.status) : null;
 
-  // ── Summary strip values ─────────────────────────────────────────────────────
+  // ── Status bar values ────────────────────────────────────────────────────────
   const summaryRunLabel = latestRun
     ? `${runStatusVariant(latestRun.status).label} · ${fmtDateShort(latestRun.finished_at ?? latestRun.started_at)}`
     : "Jamais effectué";
+
+  const runAccent =
+    latestRun?.status === "succeeded" ? "success" :
+    latestRun?.status === "failed" ? "danger" :
+    undefined;
 
   return (
     <>
       <Topbar title={title} subtitle={subtitle} />
 
       <div className="px-6 lg:px-8 py-6 space-y-5 max-w-[1440px]">
-
-        {/* ── Description + actions ──────────────────────────────── */}
-        <div className="flex items-center justify-between gap-4">
-          <p className="text-sm text-muted-foreground">{description}</p>
-          <button
-            onClick={() => void refresh()}
-            disabled={loading}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:border-primary/30 transition-colors disabled:opacity-50 flex-shrink-0"
-          >
-            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
-            Actualiser
-          </button>
-        </div>
 
         {/* ── Error banner ───────────────────────────────────────── */}
         {error && (
@@ -305,51 +297,57 @@ export function DomainWorkspace({
           </div>
         )}
 
-        {/* ── Summary strip ──────────────────────────────────────── */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 rounded-xl border border-border bg-card overflow-hidden divide-x divide-y lg:divide-y-0 divide-border">
-          <SummaryChip
+        {/* ── Compact status bar ─────────────────────────────────── */}
+        <div className="flex items-center rounded-lg border border-border bg-card overflow-hidden">
+          <StatusItem
             label="Source active"
             value={loading ? "…" : (selectedDocument?.original_filename ?? "Aucune source")}
-            icon={<FileSpreadsheet className="h-3.5 w-3.5" />}
-            muted={!selectedDocument}
+            dotColor={selectedDocument ? "primary" : "muted"}
           />
-          <SummaryChip
+          <div className="self-stretch w-px bg-border flex-shrink-0" />
+          <StatusItem
             label="Dernier calcul"
             value={loading ? "…" : summaryRunLabel}
-            icon={<Calculator className="h-3.5 w-3.5" />}
-            accent={
-              latestRun?.status === "succeeded"
-                ? "success"
-                : latestRun?.status === "failed"
-                ? "danger"
-                : undefined
+            dotColor={
+              latestRun?.status === "succeeded" ? "success" :
+              latestRun?.status === "failed" ? "danger" :
+              "muted"
             }
-            muted={!latestRun}
           />
-          <SummaryChip
+          <div className="self-stretch w-px bg-border flex-shrink-0" />
+          <StatusItem
             label="Lignes traitées"
             value={loading ? "…" : allRows.length > 0 ? allRows.length.toLocaleString("fr-FR") : "—"}
-            icon={<FileText className="h-3.5 w-3.5" />}
-            muted={allRows.length === 0}
+            dotColor={allRows.length > 0 ? "primary" : "muted"}
           />
-          <SummaryChip
+          <div className="self-stretch w-px bg-border flex-shrink-0" />
+          <StatusItem
             label="Sources disponibles"
             value={loading ? "…" : documents.length.toLocaleString("fr-FR")}
-            icon={<FileSpreadsheet className="h-3.5 w-3.5" />}
-            muted={documents.length === 0}
+            dotColor={documents.length > 0 ? "primary" : "muted"}
           />
+          <div className="ml-auto border-l border-border self-stretch flex items-center px-3 flex-shrink-0">
+            <button
+              onClick={() => void refresh()}
+              disabled={loading}
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+              Actualiser
+            </button>
+          </div>
         </div>
 
         {/* ── Main two-column work area ──────────────────────────── */}
         <div className="grid lg:grid-cols-[1fr_380px] xl:grid-cols-[1fr_420px] gap-5 items-start">
 
-          {/* LEFT: Workflow steps */}
+          {/* LEFT: Guided workflow steps */}
           <div className="space-y-3.5">
 
-            {/* Step 1 — Source documentaire */}
+            {/* Step 1 — Choisir une source */}
             <WorkCard
               step="1"
-              title="Source documentaire"
+              stepLabel="Choisir une source"
               subtitle="Sélectionnez le fichier sur lequel porter le calcul"
             >
               {loading ? (
@@ -376,40 +374,41 @@ export function DomainWorkspace({
                     return (
                       <div
                         key={doc.document_id}
-                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
+                        className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all cursor-pointer ${
                           active
-                            ? "bg-primary/5 border border-primary/15 text-foreground"
-                            : "border border-transparent text-muted-foreground hover:bg-muted hover:text-foreground"
+                            ? "bg-primary/5 border border-primary/20 text-foreground"
+                            : "border border-transparent text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                         }`}
+                        onClick={() => setSelectedDocumentId(doc.document_id)}
                       >
-                        <button
-                          onClick={() => setSelectedDocumentId(doc.document_id)}
-                          className="flex items-center gap-2.5 flex-1 min-w-0 text-left"
-                        >
-                          <span
-                            className={`h-2 w-2 rounded-full flex-shrink-0 transition-colors ${
-                              active ? "bg-primary" : "bg-border"
-                            }`}
-                          />
-                          <span className="flex-1 truncate font-medium text-[13px]">
-                            {doc.original_filename}
-                          </span>
-                          <span className="text-[11px] text-muted-foreground flex-shrink-0">
-                            {fmtDateShort(doc.created_at)}
-                          </span>
-                        </button>
+                        {/* Active indicator dot */}
+                        <span
+                          className={`h-1.5 w-1.5 rounded-full flex-shrink-0 transition-colors ${
+                            active ? "bg-primary" : "bg-border"
+                          }`}
+                        />
+                        {/* Filename */}
+                        <span className="flex-1 truncate font-medium text-[13px]">
+                          {doc.original_filename}
+                        </span>
+                        {/* Date */}
+                        <span className="text-[11px] text-muted-foreground flex-shrink-0">
+                          {fmtDateShort(doc.created_at)}
+                        </span>
+                        {/* Download actions — revealed on hover */}
                         {active && doc.downloads && (
-                          <span className="flex gap-1 flex-shrink-0">
+                          <span className="flex gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
                             {(["xlsx", "csv", "txt"] as const).map((fmt) => (
                               <button
                                 key={fmt}
-                                onClick={() =>
+                                onClick={(e) => {
+                                  e.stopPropagation();
                                   void downloadAuthorizedFile(
                                     doc.downloads![fmt],
                                     doc.original_filename,
-                                  )
-                                }
-                                className="px-1.5 py-0.5 text-[10px] rounded border border-border hover:border-primary/30 text-muted-foreground hover:text-foreground transition-colors"
+                                  );
+                                }}
+                                className="px-1.5 py-0.5 text-[10px] rounded border border-border/60 hover:border-primary/30 text-muted-foreground hover:text-foreground transition-colors"
                               >
                                 {fmt.toUpperCase()}
                               </button>
@@ -435,7 +434,7 @@ export function DomainWorkspace({
                   <button
                     onClick={() => fileInputRef.current?.click()}
                     disabled={uploading}
-                    className="inline-flex items-center justify-center gap-2 text-xs text-muted-foreground hover:text-foreground border border-dashed border-border hover:border-primary/35 rounded-lg px-3 py-2 transition-colors w-full disabled:opacity-50"
+                    className="inline-flex items-center justify-center gap-2 text-xs text-muted-foreground hover:text-foreground border border-dashed border-border hover:border-primary/40 rounded-lg px-3 py-2 transition-colors w-full disabled:opacity-50 hover:bg-primary/3"
                   >
                     {uploading ? (
                       <>
@@ -453,17 +452,17 @@ export function DomainWorkspace({
               )}
             </WorkCard>
 
-            {/* Step 2 — Paramètres (conditional) */}
+            {/* Step 2 — Définir les paramètres (conditional) */}
             {fields.length > 0 && (
               <WorkCard
                 step="2"
-                title="Paramètres de calcul"
-                subtitle="Définissez les paramètres avant d'exécuter"
+                stepLabel="Définir les paramètres"
+                subtitle="Renseignez les paramètres de la période de calcul"
               >
                 <div className="grid sm:grid-cols-2 gap-3">
                   {fields.map((field) => (
                     <label key={field.key} className="block">
-                      <span className="mb-1 block text-xs font-medium text-foreground">
+                      <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/70">
                         {field.label}
                         {field.required && (
                           <span className="ml-0.5 text-red-500">*</span>
@@ -478,7 +477,7 @@ export function DomainWorkspace({
                               [field.key]: e.target.value,
                             }))
                           }
-                          className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-primary/50"
+                          className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-primary/50 focus:ring-1 focus:ring-primary/20"
                         >
                           <option value="">Choisir…</option>
                           {field.options?.map((opt) => (
@@ -497,7 +496,7 @@ export function DomainWorkspace({
                               [field.key]: e.target.value,
                             }))
                           }
-                          className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-primary/50"
+                          className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-primary/50 focus:ring-1 focus:ring-primary/20"
                         />
                       )}
                     </label>
@@ -506,11 +505,11 @@ export function DomainWorkspace({
               </WorkCard>
             )}
 
-            {/* Step 3 — Lancer le calcul */}
+            {/* Step 3 — Exécuter le calcul */}
             <WorkCard
               step={fields.length > 0 ? "3" : "2"}
-              title="Lancer le calcul"
-              subtitle="Exécute le moteur actuariel sur la source sélectionnée"
+              stepLabel="Exécuter le calcul"
+              subtitle="Lance le moteur actuariel sur la source sélectionnée"
             >
               <button
                 onClick={() => void runCalculation()}
@@ -545,15 +544,18 @@ export function DomainWorkspace({
             </WorkCard>
           </div>
 
-          {/* RIGHT: Result column */}
+          {/* RIGHT: Result & status rail */}
           <div className="space-y-3.5 lg:sticky lg:top-[5.5rem]">
 
             {/* ── Primary KPI hero ───────────────────────────────── */}
-            <div className="rounded-2xl border border-border bg-card overflow-hidden">
+            <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-soft">
+              {/* Brand accent stripe */}
+              <div className="h-[3px] bg-primary" />
+
               {/* Card header */}
-              <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-border">
+              <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-border bg-primary/[0.025]">
                 <div>
-                  <div className="text-[9.5px] font-bold tracking-[0.22em] uppercase text-muted-foreground/70 mb-0.5">
+                  <div className="text-[9px] font-bold tracking-[0.25em] uppercase text-muted-foreground/55 mb-1">
                     Résultat principal
                   </div>
                   <div className="text-[15px] font-semibold text-foreground leading-tight">
@@ -579,16 +581,32 @@ export function DomainWorkspace({
                   </div>
                 ) : hasResult ? (
                   <>
-                    {/* The result: impossible to miss */}
                     <div
                       className="text-[3.4rem] font-bold tabular-nums tracking-tight leading-none text-foreground"
                       style={{ fontVariantNumeric: "tabular-nums" }}
                     >
                       {formattedTotal}
                     </div>
-                    <div className="mt-3 text-xs text-muted-foreground">
-                      Calculé le{" "}
-                      {fmtDatetime(latestRun?.finished_at ?? latestRun?.started_at)}
+                    <div className="mt-4 space-y-1">
+                      <div className="text-[12px] text-muted-foreground">
+                        Calculée le {fmtDatetime(latestRun?.finished_at ?? latestRun?.started_at)}
+                      </div>
+                      {allRows.length > 0 && (
+                        <div className="text-[11px] text-muted-foreground/60">
+                          à partir de{" "}
+                          <span className="font-medium text-muted-foreground">
+                            {allRows.length.toLocaleString("fr-FR")} lignes
+                          </span>
+                          {selectedDocument && (
+                            <>
+                              {" "}·{" "}
+                              <span className="font-medium text-muted-foreground truncate">
+                                {selectedDocument.original_filename}
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </>
                 ) : latestRun?.status === "failed" ? (
@@ -602,12 +620,11 @@ export function DomainWorkspace({
                   </div>
                 ) : (
                   <div className="flex flex-col items-center gap-3">
-                    <div className="text-[3rem] font-bold tabular-nums text-muted-foreground/20 leading-none select-none">
+                    <div className="text-[3rem] font-bold tabular-nums text-muted-foreground/15 leading-none select-none">
                       —
                     </div>
                     <p className="text-sm text-muted-foreground max-w-[230px]">
-                      Aucun résultat disponible. Sélectionnez une source et lancez le calcul
-                      pour obtenir la{" "}
+                      Sélectionnez une source et lancez le calcul pour obtenir la{" "}
                       <span className="font-medium text-foreground">
                         {primaryMetricLabel.toLowerCase()}
                       </span>
@@ -618,27 +635,39 @@ export function DomainWorkspace({
               </div>
             </div>
 
-            {/* ── Run status card ────────────────────────────────── */}
+            {/* ── Execution summary ──────────────────────────────── */}
             {latestRun && (
-              <div className="rounded-xl border border-border bg-card overflow-hidden divide-y divide-border text-sm">
-                <div className="px-4 py-3 bg-muted/30">
-                  <span className="text-[10px] font-bold tracking-[0.18em] uppercase text-muted-foreground/60">
-                    Dernier run
+              <div className="rounded-xl border border-border bg-card overflow-hidden text-sm">
+                <div className="flex items-center justify-between px-4 py-2.5 border-b border-border bg-muted/20">
+                  <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-muted-foreground/55">
+                    Détails d'exécution
                   </span>
+                  {runVariant && (
+                    <span
+                      className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${runVariant.containerCls}`}
+                    >
+                      <runVariant.Icon className="h-2.5 w-2.5" />
+                      {runVariant.label}
+                    </span>
+                  )}
                 </div>
-                <RunMetaRow
-                  label="Source"
-                  value={
-                    selectedDocument?.original_filename ?? latestRun.document_version_id
-                  }
-                />
-                <RunMetaRow label="Démarré" value={fmtDatetime(latestRun.started_at)} />
-                <RunMetaRow
-                  label="Terminé"
-                  value={fmtDatetime(latestRun.finished_at)}
-                />
-                <RunMetaRow label="Run ID" value={latestRun.run_id} mono />
-                <div className="px-4 py-3 flex flex-wrap gap-1.5">
+                <div className="divide-y divide-border/60">
+                  <RunMetaRow
+                    label="Source"
+                    value={selectedDocument?.original_filename ?? latestRun.document_version_id}
+                  />
+                  <RunMetaRow label="Démarré" value={fmtDatetime(latestRun.started_at)} />
+                  <RunMetaRow label="Terminé" value={fmtDatetime(latestRun.finished_at)} />
+                  <div className="flex items-center justify-between gap-3 px-4 py-2">
+                    <span className="flex-shrink-0 text-[10px] font-medium text-muted-foreground/60 uppercase tracking-wide">
+                      Run ID
+                    </span>
+                    <span className="max-w-[65%] truncate text-right font-mono text-[10px] text-muted-foreground/50">
+                      {latestRun.run_id}
+                    </span>
+                  </div>
+                </div>
+                <div className="px-4 py-2.5 border-t border-border/60 flex flex-wrap gap-1.5">
                   {(
                     [
                       {
@@ -661,7 +690,7 @@ export function DomainWorkspace({
                     <button
                       key={label}
                       onClick={() => void downloadAuthorizedFile(url, file)}
-                      className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:border-primary/25 transition-colors bg-muted/20 hover:bg-muted/50"
+                      className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-[10px] font-medium text-muted-foreground hover:text-foreground hover:border-primary/25 transition-colors bg-muted/20 hover:bg-muted/50"
                     >
                       <Download className="h-3 w-3" />
                       {label}
@@ -673,28 +702,69 @@ export function DomainWorkspace({
           </div>
         </div>
 
-        {/* ── Detail tabs ────────────────────────────────────────── */}
-        <Tabs defaultValue="rows">
-          <TabsList className="h-auto gap-0.5 p-1">
-            <TabsTrigger value="rows" className="text-xs px-3.5 py-1.5">
-              Aperçu des lignes calculées
-              {allRows.length > 0 && (
-                <span className="ml-1.5 rounded bg-muted-foreground/15 px-1.5 py-0.5 text-[10px] tabular-nums">
-                  {allRows.length.toLocaleString("fr-FR")}
-                </span>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="artifacts" className="text-xs px-3.5 py-1.5">
-              Artefacts
-            </TabsTrigger>
-            <TabsTrigger value="history" className="text-xs px-3.5 py-1.5">
-              Historique des runs
-            </TabsTrigger>
-          </TabsList>
+        {/* ── Detail workspace ───────────────────────────────────── */}
+        <div className="rounded-xl border border-border bg-card overflow-hidden">
 
-          {/* Tab: Lignes */}
-          <TabsContent value="rows" className="mt-3">
-            <div className="rounded-xl border border-border bg-card overflow-hidden">
+          {/* Workspace header */}
+          <div className="flex items-center justify-between px-5 py-3 border-b border-border bg-muted/20">
+            <div>
+              <div className="text-[9px] font-bold tracking-[0.25em] uppercase text-muted-foreground/50 mb-0.5">
+                Espace d'analyse
+              </div>
+              <div className="text-[12px] font-semibold text-foreground">
+                Données détaillées du dernier calcul
+              </div>
+            </div>
+            {latestRun && formattedTotal && (
+              <div className="text-right flex-shrink-0">
+                <div className="text-[10px] text-muted-foreground/55 uppercase tracking-wide mb-0.5">
+                  {primaryMetricLabel}
+                </div>
+                <div className="text-[13px] font-semibold tabular-nums text-foreground">
+                  {formattedTotal}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Tabs with underline style */}
+          <Tabs defaultValue="rows">
+            <div className="border-b border-border px-5">
+              <TabsList className="h-auto gap-0 rounded-none bg-transparent p-0">
+                <TabsTrigger
+                  value="rows"
+                  className="rounded-none border-b-2 border-transparent px-4 py-2.5 text-xs font-medium text-muted-foreground -mb-px
+                    data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none
+                    hover:text-foreground transition-colors"
+                >
+                  Lignes calculées
+                  {allRows.length > 0 && (
+                    <span className="ml-1.5 rounded bg-muted px-1.5 py-0.5 text-[10px] tabular-nums text-muted-foreground">
+                      {allRows.length.toLocaleString("fr-FR")}
+                    </span>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger
+                  value="artifacts"
+                  className="rounded-none border-b-2 border-transparent px-4 py-2.5 text-xs font-medium text-muted-foreground -mb-px
+                    data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none
+                    hover:text-foreground transition-colors"
+                >
+                  Artefacts
+                </TabsTrigger>
+                <TabsTrigger
+                  value="history"
+                  className="rounded-none border-b-2 border-transparent px-4 py-2.5 text-xs font-medium text-muted-foreground -mb-px
+                    data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none
+                    hover:text-foreground transition-colors"
+                >
+                  Historique
+                </TabsTrigger>
+              </TabsList>
+            </div>
+
+            {/* Tab: Lignes calculées */}
+            <TabsContent value="rows" className="mt-0">
               {previewRows.length === 0 ? (
                 <EmptyTabState
                   icon={<FileText className="h-8 w-8 text-muted-foreground/25" />}
@@ -706,24 +776,29 @@ export function DomainWorkspace({
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
-                        <tr className="border-b border-border bg-muted/30">
+                        <tr className="border-b border-border bg-muted/40">
                           {rowColumns.map((col) => (
                             <th
                               key={col}
-                              className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap"
+                              className="px-5 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70 whitespace-nowrap"
                             >
                               {col}
                             </th>
                           ))}
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-border/50">
+                      <tbody>
                         {previewRows.map((row, i) => (
-                          <tr key={i} className="hover:bg-muted/25 transition-colors">
+                          <tr
+                            key={i}
+                            className={`border-b border-border/40 transition-colors hover:bg-primary/[0.025] ${
+                              i % 2 === 0 ? "bg-card" : "bg-muted/15"
+                            }`}
+                          >
                             {rowColumns.map((col) => (
                               <td
                                 key={col}
-                                className="px-4 py-2.5 text-foreground whitespace-nowrap"
+                                className="px-5 py-2.5 text-[12px] text-foreground whitespace-nowrap"
                               >
                                 {typeof row[col] === "number"
                                   ? Number(row[col]).toLocaleString("fr-FR", {
@@ -738,19 +813,20 @@ export function DomainWorkspace({
                     </table>
                   </div>
                   {allRows.length > 10 && (
-                    <div className="border-t border-border bg-muted/20 px-4 py-2.5 text-[11px] text-muted-foreground">
-                      10 premières lignes affichées sur{" "}
-                      {allRows.length.toLocaleString("fr-FR")} au total.
+                    <div className="border-t border-border bg-muted/20 px-5 py-2.5 text-[11px] text-muted-foreground">
+                      Aperçu des 10 premières lignes sur{" "}
+                      <span className="font-semibold text-foreground">
+                        {allRows.length.toLocaleString("fr-FR")}
+                      </span>{" "}
+                      au total.
                     </div>
                   )}
                 </>
               )}
-            </div>
-          </TabsContent>
+            </TabsContent>
 
-          {/* Tab: Artefacts */}
-          <TabsContent value="artifacts" className="mt-3">
-            <div className="rounded-xl border border-border bg-card overflow-hidden">
+            {/* Tab: Artefacts */}
+            <TabsContent value="artifacts" className="mt-0">
               {!latestRun ? (
                 <EmptyTabState
                   icon={<Download className="h-8 w-8 text-muted-foreground/25" />}
@@ -758,53 +834,59 @@ export function DomainWorkspace({
                   hint="Les artefacts seront générés après le premier calcul."
                 />
               ) : (
-                <div className="p-5 space-y-4">
-                  <div className="flex flex-wrap gap-2 border-b border-border pb-4">
-                    {(
-                      [
-                        {
-                          label: "Résultat JSON",
-                          url: latestRun.artifacts.result,
-                          file: `${domain}-result.json`,
-                        },
-                        {
-                          label: "Lignes JSON",
-                          url: latestRun.artifacts.rows,
-                          file: `${domain}-rows.json`,
-                        },
-                        {
-                          label: "Rapport de nettoyage",
-                          url: latestRun.artifacts.cleaning_report,
-                          file: `${domain}-cleaning-report.json`,
-                        },
-                      ] as const
-                    ).map(({ label, url, file }) => (
-                      <button
-                        key={label}
-                        onClick={() => void downloadAuthorizedFile(url, file)}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-muted/30 hover:bg-muted/60 px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground hover:border-primary/25 transition-colors"
-                      >
-                        <Download className="h-3.5 w-3.5" />
-                        {label}
-                      </button>
-                    ))}
-                  </div>
+                <div className="p-5 space-y-5">
+                  {/* Download buttons */}
                   <div>
-                    <div className="mb-2 text-[10px] font-bold tracking-[0.18em] uppercase text-muted-foreground/60">
+                    <div className="mb-2.5 text-[10px] font-bold tracking-[0.2em] uppercase text-muted-foreground/55">
+                      Télécharger
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {(
+                        [
+                          {
+                            label: "Résultat JSON",
+                            url: latestRun.artifacts.result,
+                            file: `${domain}-result.json`,
+                          },
+                          {
+                            label: "Lignes JSON",
+                            url: latestRun.artifacts.rows,
+                            file: `${domain}-rows.json`,
+                          },
+                          {
+                            label: "Rapport de nettoyage",
+                            url: latestRun.artifacts.cleaning_report,
+                            file: `${domain}-cleaning-report.json`,
+                          },
+                        ] as const
+                      ).map(({ label, url, file }) => (
+                        <button
+                          key={label}
+                          onClick={() => void downloadAuthorizedFile(url, file)}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-muted/30 hover:bg-muted/60 px-3.5 py-2 text-xs font-medium text-muted-foreground hover:text-foreground hover:border-primary/25 transition-colors"
+                        >
+                          <Download className="h-3.5 w-3.5" />
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Raw result */}
+                  <div>
+                    <div className="mb-2.5 text-[10px] font-bold tracking-[0.2em] uppercase text-muted-foreground/55">
                       Résultat brut
                     </div>
-                    <pre className="max-h-80 overflow-auto rounded-lg bg-slate-950 p-4 text-[11px] leading-relaxed text-slate-200">
+                    <pre className="max-h-80 overflow-auto rounded-lg border border-border bg-slate-950 p-4 text-[11px] leading-relaxed text-slate-300">
                       {JSON.stringify(resultPayload, null, 2)}
                     </pre>
                   </div>
                 </div>
               )}
-            </div>
-          </TabsContent>
+            </TabsContent>
 
-          {/* Tab: Historique */}
-          <TabsContent value="history" className="mt-3">
-            <div className="rounded-xl border border-border bg-card overflow-hidden">
+            {/* Tab: Historique */}
+            <TabsContent value="history" className="mt-0">
               {!latestRun ? (
                 <EmptyTabState
                   icon={<Clock className="h-8 w-8 text-muted-foreground/25" />}
@@ -812,14 +894,14 @@ export function DomainWorkspace({
                   hint="L'historique des calculs s'affichera ici après le premier run."
                 />
               ) : (
-                <div className="divide-y divide-border">
-                  <div className="bg-muted/30 px-5 py-3">
-                    <span className="text-[10px] font-bold tracking-[0.18em] uppercase text-muted-foreground/60">
+                <div>
+                  <div className="bg-muted/30 px-5 py-2.5 border-b border-border">
+                    <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-muted-foreground/55">
                       Runs enregistrés
                     </span>
                   </div>
                   {runVariant && (
-                    <div className="flex items-center gap-4 px-5 py-4">
+                    <div className="flex items-center gap-5 px-5 py-4">
                       <span
                         className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full border flex-shrink-0 ${runVariant.containerCls}`}
                       >
@@ -830,16 +912,16 @@ export function DomainWorkspace({
                         <div className="text-[13px] font-medium text-foreground">
                           Run du {fmtDatetime(latestRun.started_at)}
                         </div>
-                        <div className="mt-0.5 truncate font-mono text-[11px] text-muted-foreground">
+                        <div className="mt-0.5 truncate font-mono text-[10px] text-muted-foreground/50">
                           {latestRun.run_id}
                         </div>
                       </div>
                       {formattedTotal && (
                         <div className="flex-shrink-0 text-right">
-                          <div className="text-[13px] font-semibold tabular-nums text-foreground">
+                          <div className="text-[14px] font-semibold tabular-nums text-foreground">
                             {formattedTotal}
                           </div>
-                          <div className="mt-0.5 text-[10px] text-muted-foreground">
+                          <div className="mt-0.5 text-[10px] text-muted-foreground/60">
                             {primaryMetricLabel}
                           </div>
                         </div>
@@ -848,9 +930,9 @@ export function DomainWorkspace({
                   )}
                 </div>
               )}
-            </div>
-          </TabsContent>
-        </Tabs>
+            </TabsContent>
+          </Tabs>
+        </div>
       </div>
     </>
   );
@@ -858,75 +940,54 @@ export function DomainWorkspace({
 
 // ─── Sub-components ────────────────────────────────────────────────────────────
 
-function SummaryChip({
+type DotColor = "primary" | "success" | "danger" | "muted";
+
+function StatusItem({
   label,
   value,
-  icon,
-  accent,
-  muted = false,
+  dotColor = "muted",
 }: {
   label: string;
   value: string;
-  icon?: ReactNode;
-  accent?: "success" | "danger";
-  muted?: boolean;
+  dotColor?: DotColor;
 }) {
+  const dotCls =
+    dotColor === "primary" ? "bg-primary/60" :
+    dotColor === "success" ? "bg-emerald-500" :
+    dotColor === "danger" ? "bg-red-500" :
+    "bg-border";
+
   return (
-    <div className="flex items-center gap-2.5 px-4 py-3.5">
-      <span
-        className={`flex-shrink-0 transition-colors ${
-          muted
-            ? "text-muted-foreground/30"
-            : accent === "success"
-            ? "text-emerald-600"
-            : accent === "danger"
-            ? "text-red-500"
-            : "text-primary/60"
-        }`}
-      >
-        {icon}
-      </span>
-      <div className="min-w-0">
-        <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground/55 leading-none mb-0.5">
-          {label}
-        </div>
-        <div
-          className={`truncate text-[13px] font-semibold leading-tight ${
-            muted
-              ? "text-muted-foreground/40"
-              : accent === "success"
-              ? "text-emerald-700"
-              : accent === "danger"
-              ? "text-red-600"
-              : "text-foreground"
-          }`}
-        >
-          {value}
-        </div>
-      </div>
+    <div className="flex items-center gap-2 px-4 py-2.5 min-w-0">
+      <span className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${dotCls}`} />
+      <span className="text-[10px] text-muted-foreground/55 whitespace-nowrap">{label}</span>
+      <span className="text-[12px] font-medium text-foreground truncate max-w-[160px]">{value}</span>
     </div>
   );
 }
 
 function WorkCard({
   step,
-  title,
+  stepLabel,
   subtitle,
   children,
 }: {
   step: string;
-  title: string;
+  stepLabel: string;
   subtitle?: string;
   children: ReactNode;
 }) {
   return (
     <div className="rounded-xl border border-border bg-card overflow-hidden">
       <div className="flex items-center gap-3 border-b border-border bg-muted/20 px-4 py-3.5">
-        <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-[11px] font-bold text-primary">
+        <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border-2 border-primary/35 text-[11px] font-bold text-primary/80">
           {step}
         </span>
         <div>
-          <div className="text-[13px] font-semibold leading-tight text-foreground">{title}</div>
+          <div className="text-[9px] font-bold tracking-[0.22em] uppercase text-muted-foreground/50 leading-none mb-0.5">
+            Étape {step}
+          </div>
+          <div className="text-[13px] font-semibold leading-tight text-foreground">{stepLabel}</div>
           {subtitle && (
             <div className="text-[11px] text-muted-foreground mt-0.5">{subtitle}</div>
           )}
@@ -951,7 +1012,7 @@ function RunMetaRow({
       <span className="flex-shrink-0 text-[11px] font-medium text-muted-foreground">{label}</span>
       <span
         className={`max-w-[65%] truncate text-right text-[12px] text-foreground ${
-          mono ? "font-mono" : "font-medium"
+          mono ? "font-mono text-[11px]" : "font-medium"
         }`}
       >
         {value}
